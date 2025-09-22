@@ -84,7 +84,7 @@ jobs:
         pyglossary ./wn${version}-dict ./wordnet-${version}-tabfile.txt --read-format=Wordnet --write-format=Tabfile
         python text_format.py wordnet-${version}-tabfile.txt wordnet-${version}-tabfile-formatted.txt
         pyglossary ./wordnet-${version}-tabfile-formatted.txt ./wordnet-${version}-stardict-BlankLineStyle --read-format=Tabfile --write-format=Stardict --name=WordNet
-        pyglossary ./wordnet-${version}-tabfile-formatted.txt ./wordnet-${RELEASE_DATE}-yomitan-BlankLineStyle.zip --read-format=Tabfile --write-format=Yomichan --name=WordNet
+        pyglossary ./wordnet-${version}-tabfile-formatted.txt ./wordnet-${version}-yomitan-BlankLineStyle.zip --read-format=Tabfile --write-format=Yomichan --name=WordNet
         python html2ansi.py wordnet-${version}-tabfile-formatted.txt wordnet-${version}-tabfile-formatted-html2ansi.txt
         pyglossary ./wordnet-${version}-tabfile-formatted-html2ansi.txt ./wordnet-${version}-stardict-html2ansi-BlankLineStyle --read-format=Tabfile --write-format=Stardict --name=WordNet
 
@@ -92,12 +92,25 @@ jobs:
       run: |
         for base in *.ifo; do
           prefix="${base%.ifo}"
-          if [[ -f "$prefix.ifo" && -f "$prefix.dict.dz" && -f "$prefix.idx" ]]; then
-            echo "Creating ${prefix}.zip from $prefix.ifo, $prefix.dict.dz, $prefix.idx"
-            zip -j "${prefix}.zip" "$prefix.ifo" "$prefix.dict.dz" "$prefix.idx"
-          else
-            echo "Skipping $prefix, missing required files"
+          if [[ ! -f "$prefix.ifo" ]]; then
+            echo "Skipping $prefix, missing $prefix.ifo"
+            continue
           fi
+          if [[ ! -f "$prefix.idx" ]]; then
+            echo "Skipping $prefix, missing $prefix.idx"
+            continue
+          fi
+          dict_file=""
+          if [[ -f "$prefix.dict.dz" ]]; then
+            dict_file="$prefix.dict.dz"
+          elif [[ -f "$prefix.dict" ]]; then
+            dict_file="$prefix.dict"
+          else
+            echo "Skipping $prefix, missing $prefix.dict.dz or $prefix.dict"
+            continue
+          fi
+          echo "Creating ${prefix}.zip from $prefix.ifo, $dict_file, $prefix.idx"
+          zip -j "${prefix}.zip" "$prefix.ifo" "$dict_file" "$prefix.idx"
         done
 
     - name: Create a txt file with current commit SHA

@@ -86,7 +86,7 @@ jobs:
         pyglossary ./wordnet-${version}-tabfile-formatted.txt ./wordnet-${version}-stardict-BlankLineStyle --read-format=Tabfile --write-format=Stardict --name=WordNet
         pyglossary ./wordnet-${version}-tabfile-formatted.txt ./wordnet-${version}-yomitan-BlankLineStyle.zip --read-format=Tabfile --write-format=Yomichan --name=WordNet
         python html2ansi.py wordnet-${version}-tabfile-formatted.txt wordnet-${version}-tabfile-formatted-html2ansi.txt
-        pyglossary ./wordnet-${version}-tabfile-formatted-html2ansi.txt ./wordnet-${version}-stardict-html2ansi-BlankLineStyle --read-format=Tabfile --write-format=Stardict --name=WordNet
+        pyglossary ./wordnet-${version}-tabfile-formatted-html2ansi.txt ./wordnet-${version}-stardict-BlankLineStyle-html2ansi --read-format=Tabfile --write-format=Stardict --name=WordNet
 
     - name: Create zip files for Stardict sets
       run: |

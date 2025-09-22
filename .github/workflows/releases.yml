@@ -1,0 +1,121 @@
+name: Create Releases
+
+on:
+  schedule:
+    - cron: '0 0 1 * *'  # 00:00 on the 1st of every month (UTC)
+  workflow_dispatch: # allow manual trigger
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repositoryI
+      uses: actions/checkout@v4
+
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.11"
+
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y zip
+
+    - name: Install Python packages
+      run: |
+        pip install pyglossary lxml beautifulsoup4 python-idzip tqdm
+
+    - name: Check latest WordNet version
+      id: check_version
+      run: |
+        base_url="https://wordnetcode.princeton.edu/wn"
+        version_pattern="^[0-9]+\.[0-9]+$" # Regex to match version format (e.g., 3.1)
+        known_versions=("3.1" "3.0" "2.1") # Add more versions as needed
+        last_version_file="last_version.txt"
+        if [[ -f $last_version_file ]]; then
+          last_version=$(cat $last_version_file)
+          echo "Last version: $last_version"
+        else
+          last_version=""
+        fi
+        latest_version=""
+        for version in "${known_versions[@]}"; do
+          download_url="${base_url}${version}.dict.tar.gz"
+          echo "Checking: $download_url"
+          if curl --head --silent --fail "$download_url" > /dev/null; then
+            echo "Found valid version: $version"
+            latest_version="$version"
+          else
+            echo "Version $version not found. Proceeding to next version."
+          fi
+        done
+        if [[ "$latest_version" == "" ]]; then
+          echo "No valid version found to download."
+          exit 1
+        fi
+        if [[ "$latest_version" == "$last_version" ]]; then
+          echo "No new version found, skipping download."
+          echo "latest_version=$latest_version" >> $GITHUB_OUTPUT
+          exit 0
+        fi
+        echo "New version detected: $latest_version. Downloading..."
+        curl -LO "${base_url}${latest_version}.dict.tar.gz"
+        echo "$latest_version" > $last_version_file
+        echo "RELEASE_VERSION=$latest_version" >> $GITHUB_ENV
+        echo "latest_version=$latest_version" >> $GITHUB_OUTPUT
+
+    - name: Decompress archive
+      env:
+        version: ${{ steps.check_version.outputs.latest_version }}
+      run: |
+        mkdir wn${version}-dict
+        tar -xzf "wn${version}.dict.tar.gz" -C wn${version}-dict --strip-components=1
+
+    - name: Run pyglossary and related processing
+      env:
+        version: ${{ steps.check_version.outputs.latest_version }}
+      run: |
+        pyglossary ./wn${version}-dict ./wordnet-${version}-stardict --read-format=Wordnet --write-format=Stardict --name=WordNet
+        pyglossary ./wn${version}-dict ./wordnet-${version}-tabfile.txt --read-format=Wordnet --write-format=Tabfile
+        python text_format.py wordnet-${version}-tabfile.txt wordnet-${version}-tabfile-formatted.txt
+        pyglossary ./wordnet-${version}-tabfile-formatted.txt ./wordnet-${version}-stardict-clear --read-format=Tabfile --write-format=StarDict --name=WordNet
+        pyglossary ./wordnet-${version}-tabfile-formatted.txt ./wordnet-${RELEASE_DATE}-yomitan.zip --read-format=Tabfile --write-format=Yomichan --name=WordNet
+        python html2ansi.py wordnet-${version}-tabfile-formatted.txt wordnet-${version}-tabfile-formatted-html2ansi.txt
+        pyglossary ./wordnet-${version}-tabfile-formatted-html2ansi.txt ./wordnet-${version}-stardict-html2ansi --read-format=Tabfile --write-format=Stardict --name=WordNet
+
+    - name: Create zip files for Stardict sets
+      run: |
+        for base in *.ifo; do
+          prefix="${base%.ifo}"
+          if [[ -f "$prefix.ifo" && -f "$prefix.dict.dz" && -f "$prefix.idx" ]]; then
+            echo "Creating ${prefix}.zip from $prefix.ifo, $prefix.dict.dz, $prefix.idx"
+            zip -j "${prefix}.zip" "$prefix.ifo" "$prefix.dict.dz" "$prefix.idx"
+          else
+            echo "Skipping $prefix, missing required files"
+          fi
+        done
+
+    - name: Create a txt file with current commit SHA
+      run: echo "${{ github.sha }}" > Release.txt
+
+    - name: Commit updated Release.txt with new release date
+      run: |
+        git config user.name "github-actions"
+        git config user.email "github-actions@github.com"
+        git add Release.txt
+        git commit -m "Update last processed release date to ${{ steps.get_latest_release.outputs.release_date }}" || echo "No changes to commit"
+        git push
+
+    - name: Create GitHub Release and upload files
+      uses: softprops/action-gh-release@v2
+      if: github.ref_type == 'tag' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+      with:
+        tag_name: ${{ steps.get_latest_release.outputs.release_date }}
+        name: "WordNet Release ${{ steps.get_latest_release.outputs.release_date }}"
+        files: |
+          wordnet-*.zip

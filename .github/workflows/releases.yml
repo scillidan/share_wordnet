@@ -103,12 +103,24 @@ jobs:
     - name: Create a txt file with current commit SHA
       run: echo "${{ github.sha }}" > Release.txt
 
+    - name: Configure Git for tag creation
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+    
+    - name: Create and push tag for release
+      env:
+        RELEASE_VERSION: ${{ steps.check_version.outputs.latest_version }}
+      run: |
+        git tag -f "$RELEASE_VERSION"
+        git push origin "$RELEASE_VERSION" -f
+
     - name: Create GitHub Release and upload files
       uses: softprops/action-gh-release@v2
-      if: github.ref_type == 'tag' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+      if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
       with:
-        tag_name: ${{ steps.get_latest_release.outputs.release_date }}
-        name: "${{ steps.get_latest_release.outputs.release_date }}"
+        tag_name: ${{ steps.check_version.outputs.latest_version }}
+        name: "${{ steps.check_version.outputs.latest_version }}"
         files: |
           wordnet-*.zip
           wordnet-*.txt

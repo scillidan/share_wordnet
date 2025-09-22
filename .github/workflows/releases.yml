@@ -80,13 +80,13 @@ jobs:
       env:
         version: ${{ steps.check_version.outputs.latest_version }}
       run: |
-        pyglossary ./wn${version}-dict ./wordnet-${version}-stardict --read-format=Wordnet --write-format=Stardict --name=WordNet
+        pyglossary ./wn${version}-dict ./wordnet-${version}-stardict-ListStyle --read-format=Wordnet --write-format=Stardict --name=WordNet
         pyglossary ./wn${version}-dict ./wordnet-${version}-tabfile.txt --read-format=Wordnet --write-format=Tabfile
         python text_format.py wordnet-${version}-tabfile.txt wordnet-${version}-tabfile-formatted.txt
-        pyglossary ./wordnet-${version}-tabfile-formatted.txt ./wordnet-${version}-stardict-clear --read-format=Tabfile --write-format=StarDict --name=WordNet
-        pyglossary ./wordnet-${version}-tabfile-formatted.txt ./wordnet-${RELEASE_DATE}-yomitan.zip --read-format=Tabfile --write-format=Yomichan --name=WordNet
+        pyglossary ./wordnet-${version}-tabfile-formatted.txt ./wordnet-${version}-stardict-BlankLineStyle --read-format=Tabfile --write-format=Stardict --name=WordNet
+        pyglossary ./wordnet-${version}-tabfile-formatted.txt ./wordnet-${RELEASE_DATE}-yomitan-BlankLineStyle.zip --read-format=Tabfile --write-format=Yomichan --name=WordNet
         python html2ansi.py wordnet-${version}-tabfile-formatted.txt wordnet-${version}-tabfile-formatted-html2ansi.txt
-        pyglossary ./wordnet-${version}-tabfile-formatted-html2ansi.txt ./wordnet-${version}-stardict-html2ansi --read-format=Tabfile --write-format=Stardict --name=WordNet
+        pyglossary ./wordnet-${version}-tabfile-formatted-html2ansi.txt ./wordnet-${version}-stardict-html2ansi-BlankLineStyle --read-format=Tabfile --write-format=Stardict --name=WordNet
 
     - name: Create zip files for Stardict sets
       run: |

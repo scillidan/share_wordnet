@@ -103,19 +103,13 @@ jobs:
     - name: Create a txt file with current commit SHA
       run: echo "${{ github.sha }}" > Release.txt
 
-    - name: Commit updated Release.txt with new release date
-      run: |
-        git config user.name "github-actions"
-        git config user.email "github-actions@github.com"
-        git add Release.txt
-        git commit -m "Update last processed release date to ${{ steps.get_latest_release.outputs.release_date }}" || echo "No changes to commit"
-        git push
-
     - name: Create GitHub Release and upload files
       uses: softprops/action-gh-release@v2
       if: github.ref_type == 'tag' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
       with:
         tag_name: ${{ steps.get_latest_release.outputs.release_date }}
-        name: "WordNet Release ${{ steps.get_latest_release.outputs.release_date }}"
+        name: "${{ steps.get_latest_release.outputs.release_date }}"
         files: |
           wordnet-*.zip
+          wordnet-*.txt
+          Release.txt

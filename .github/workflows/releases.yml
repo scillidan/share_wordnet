@@ -35,7 +35,7 @@ jobs:
       run: |
         base_url="https://wordnetcode.princeton.edu/wn"
         version_pattern="^[0-9]+\.[0-9]+$" # Regex to match version format (e.g., 3.1)
-        known_versions=("3.1" "3.0" "2.1") # Add more versions as needed
+        known_versions=("3.1" "3.0") # Add more versions as needed
         last_version_file="last_version.txt"
         if [[ -f $last_version_file ]]; then
           last_version=$(cat $last_version_file)
@@ -80,42 +80,61 @@ jobs:
       env:
         version: ${{ steps.check_version.outputs.latest_version }}
       run: |
-        pyglossary ./wn${version}-dict ./wordnet-${version}-stardict --read-format=Wordnet --write-format=Stardict --name=WordNet
+        pyglossary ./wn${version}-dict ./wordnet-${version}-stardict-ListStyle --read-format=Wordnet --write-format=Stardict --name=WordNet
         pyglossary ./wn${version}-dict ./wordnet-${version}-tabfile.txt --read-format=Wordnet --write-format=Tabfile
         python text_format.py wordnet-${version}-tabfile.txt wordnet-${version}-tabfile-formatted.txt
-        pyglossary ./wordnet-${version}-tabfile-formatted.txt ./wordnet-${version}-stardict-clear --read-format=Tabfile --write-format=StarDict --name=WordNet
-        pyglossary ./wordnet-${version}-tabfile-formatted.txt ./wordnet-${RELEASE_DATE}-yomitan.zip --read-format=Tabfile --write-format=Yomichan --name=WordNet
+        pyglossary ./wordnet-${version}-tabfile-formatted.txt ./wordnet-${version}-stardict-BlankLineStyle --read-format=Tabfile --write-format=Stardict --name=WordNet
+        pyglossary ./wordnet-${version}-tabfile-formatted.txt ./wordnet-${version}-yomitan-BlankLineStyle.zip --read-format=Tabfile --write-format=Yomichan --name=WordNet
         python html2ansi.py wordnet-${version}-tabfile-formatted.txt wordnet-${version}-tabfile-formatted-html2ansi.txt
-        pyglossary ./wordnet-${version}-tabfile-formatted-html2ansi.txt ./wordnet-${version}-stardict-html2ansi --read-format=Tabfile --write-format=Stardict --name=WordNet
+        pyglossary ./wordnet-${version}-tabfile-formatted-html2ansi.txt ./wordnet-${version}-stardict-BlankLineStyle-html2ansi --read-format=Tabfile --write-format=Stardict --name=WordNet
 
     - name: Create zip files for Stardict sets
       run: |
         for base in *.ifo; do
           prefix="${base%.ifo}"
-          if [[ -f "$prefix.ifo" && -f "$prefix.dict.dz" && -f "$prefix.idx" ]]; then
-            echo "Creating ${prefix}.zip from $prefix.ifo, $prefix.dict.dz, $prefix.idx"
-            zip -j "${prefix}.zip" "$prefix.ifo" "$prefix.dict.dz" "$prefix.idx"
-          else
-            echo "Skipping $prefix, missing required files"
+          if [[ ! -f "$prefix.ifo" ]]; then
+            echo "Skipping $prefix, missing $prefix.ifo"
+            continue
           fi
+          if [[ ! -f "$prefix.idx" ]]; then
+            echo "Skipping $prefix, missing $prefix.idx"
+            continue
+          fi
+          dict_file=""
+          if [[ -f "$prefix.dict.dz" ]]; then
+            dict_file="$prefix.dict.dz"
+          elif [[ -f "$prefix.dict" ]]; then
+            dict_file="$prefix.dict"
+          else
+            echo "Skipping $prefix, missing $prefix.dict.dz or $prefix.dict"
+            continue
+          fi
+          echo "Creating ${prefix}.zip from $prefix.ifo, $dict_file, $prefix.idx"
+          zip -j "${prefix}.zip" "$prefix.ifo" "$dict_file" "$prefix.idx"
         done
 
     - name: Create a txt file with current commit SHA
       run: echo "${{ github.sha }}" > Release.txt
 
-    - name: Commit updated Release.txt with new release date
+    - name: Configure Git for tag creation
       run: |
-        git config user.name "github-actions"
-        git config user.email "github-actions@github.com"
-        git add Release.txt
-        git commit -m "Update last processed release date to ${{ steps.get_latest_release.outputs.release_date }}" || echo "No changes to commit"
-        git push
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+    
+    - name: Create and push tag for release
+      env:
+        RELEASE_VERSION: ${{ steps.check_version.outputs.latest_version }}
+      run: |
+        git tag -f "$RELEASE_VERSION"
+        git push origin "$RELEASE_VERSION" -f
 
     - name: Create GitHub Release and upload files
       uses: softprops/action-gh-release@v2
-      if: github.ref_type == 'tag' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+      if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
       with:
-        tag_name: ${{ steps.get_latest_release.outputs.release_date }}
-        name: "WordNet Release ${{ steps.get_latest_release.outputs.release_date }}"
+        tag_name: ${{ steps.check_version.outputs.latest_version }}
+        name: "${{ steps.check_version.outputs.latest_version }}"
         files: |
           wordnet-*.zip
+          wordnet-*.txt
+          Release.txt

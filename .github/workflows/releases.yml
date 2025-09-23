@@ -84,7 +84,7 @@ jobs:
         pyglossary ./wn${version}-dict ./wordnet-${version}-tabfile.txt --read-format=Wordnet --write-format=Tabfile
         python text_format.py wordnet-${version}-tabfile.txt wordnet-${version}-tabfile-formatted.txt
         pyglossary ./wordnet-${version}-tabfile-formatted.txt ./wordnet-${version}-stardict-BlankLineStyle --read-format=Tabfile --write-format=Stardict --name=WordNet
-        pyglossary ./wordnet-${version}-tabfile-formatted.txt ./wordnet-${version}-yomitan-BlankLineStyle.zip --read-format=Tabfile --write-format=Yomichan --name=WordNet
+        pyglossary ./wordnet-${version}-tabfile-formatted.txt ./wordnet-${version}-yomichan-BlankLineStyle.zip --read-format=Tabfile --write-format=Yomichan --name=WordNet
         python html2ansi.py wordnet-${version}-tabfile-formatted.txt wordnet-${version}-tabfile-formatted-html2ansi.txt
         pyglossary ./wordnet-${version}-tabfile-formatted-html2ansi.txt ./wordnet-${version}-stardict-BlankLineStyle-html2ansi --read-format=Tabfile --write-format=Stardict --name=WordNet
 

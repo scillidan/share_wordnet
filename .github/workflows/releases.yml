@@ -119,7 +119,7 @@ jobs:
           zip -j "${prefix}.zip" "$prefix.ifo" "$dict_file" "$prefix.idx"
         done
 
-- name: Create zip files for Dictd sets
+    - name: Create zip files for Dictd sets
       run: |
         for base in *.ifo; do
           prefix="${base%.ifo}"

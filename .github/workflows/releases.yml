@@ -93,7 +93,7 @@ jobs:
         # sdcv
         pyglossary ./_wordnet-${version}-formatted-html2ansi.txt ./wordnet-${version}-sdcv --read-format=Tabfile --write-format=Stardict --name=WordNet
         # dictd
-        pyglossary ./_wordnet-${version}-formatted-html2ansi.txt ./wordnet-dictd --read-format=Tabfile --write-format=DictOrg --write-options="dictzip=true" --name=WordNet
+        pyglossary ./_wordnet-${version}-formatted-html2ansi.txt ./wordnet-${version}-dictd --read-format=Tabfile --write-format=DictOrg --write-options="dictzip=true" --name=WordNet
         # yomichan
         pyglossary ./_wordnet-${version}-formatted-html2ansi.txt ./wordnet-${version}-yomichan --read-format=Tabfile --write-format=Yomichan --name=WordNet
 
@@ -124,22 +124,7 @@ jobs:
 
     - name: Create zip files for Dictd sets
       run: |
-        for base in *.ifo; do
-          prefix="${base%.ifo}"
-          if [[ ! -f "$prefix.index" ]]; then
-            echo "Skipping $prefix, missing $prefix.index"
-            continue
-          fi
-          dict_file=""
-          if [[ -f "$prefix.dict.dz" ]]; then
-            dict_file="$prefix.dict.dz"
-          else
-            echo "Skipping $prefix, missing $prefix.dict.dz"
-            continue
-          fi
-          echo "Creating ${prefix}.zip from $dict_file and $prefix.index"
-          zip -j "${prefix}.zip" "$dict_file" "$prefix.index"
-        done
+        zip -j "wordnet-${version}-dictd.zip" "wordnet-${version}-dictd.dict.dz" "wordnet-${version}-dictd.index"
 
     - name: Create a txt file with current commit SHA
       run: echo "${{ github.sha }}" > Release.txt

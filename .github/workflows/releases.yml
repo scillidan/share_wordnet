@@ -83,19 +83,19 @@ jobs:
         # stardict
         pyglossary ./wn${version}-dict ./wordnet-${version}-stardict --read-format=Wordnet --write-format=Stardict --name=WordNet
         # tabfile
-        pyglossary ./wn${version}-dict ./wordnet-${version}.txt --read-format=Wordnet --write-format=Tabfile
+        pyglossary ./wn${version}-dict ./_wordnet-${version}.txt --read-format=Wordnet --write-format=Tabfile
         # tabfile-formatted
-        python text_format.py wordnet-${version}.txt wordnet-${version}-formatted.txt
+        python text_format.py _wordnet-${version}.txt _wordnet-${version}-formatted.txt
         # stardict-formatted
-        pyglossary ./wordnet-${version}-formatted.txt ./wordnet-${version}-stardict-formatted --read-format=Tabfile --write-format=Stardict --name=WordNet
+        pyglossary ./_wordnet-${version}-formatted.txt ./wordnet-${version}-stardict-formatted --read-format=Tabfile --write-format=Stardict --name=WordNet
         # tabfile-formatted-html2ansi
-        python html2ansi.py wordnet-${version}-formatted.txt wordnet-${version}-formatted-html2ansi.txt
+        python html2ansi.py _wordnet-${version}-formatted.txt _wordnet-${version}-formatted-html2ansi.txt
         # sdcv
-        pyglossary ./wordnet-${version}-formatted-html2ansi.txt ./wordnet-${version}-sdcv --read-format=Tabfile --write-format=Stardict --name=WordNet
+        pyglossary ./_wordnet-${version}-formatted-html2ansi.txt ./wordnet-${version}-sdcv --read-format=Tabfile --write-format=Stardict --name=WordNet
         # dictd
-        pyglossary ./wordnet-${version}-formatted-html2ansi.txt ./wordnet-dictd --read-format=Tabfile --write-format=DictOrg --write-options="dictzip=true" --name=WordNet
+        pyglossary ./_wordnet-${version}-formatted-html2ansi.txt ./wordnet-dictd --read-format=Tabfile --write-format=DictOrg --write-options="dictzip=true" --name=WordNet
         # yomichan
-        pyglossary ./wordnet-${version}-formatted-html2ansi.txt ./wordnet-${version}-yomichan --read-format=Tabfile --write-format=Yomichan --name=WordNet
+        pyglossary ./_wordnet-${version}-formatted-html2ansi.txt ./wordnet-${version}-yomichan --read-format=Tabfile --write-format=Yomichan --name=WordNet
 
     - name: Create zip files for Stardict sets
       run: |
@@ -163,6 +163,6 @@ jobs:
         tag_name: ${{ steps.check_version.outputs.latest_version }}
         name: "${{ steps.check_version.outputs.latest_version }}"
         files: |
+          _wordnet-*.txt
           wordnet-*.zip
-          wordnet-*.txt
           Release.txt

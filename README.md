@@ -6,10 +6,6 @@ Data from `Database Packages` on [WordNet](https://wordnet.princeton.edu/downloa
 
 ## Usage
 
-Download `.zip` from [Releases](https://github.com/scillidan/share_wordnet/releases):
-- For GoldenDict, use `*-stardict-*.zip`.
-- For sdcv, use `*-stardict-*-html2ansi.zip`.
-- For Yomichan/Yomitan, use `*-yomichan-*.zip`. Just a conversion file, I don't to know well this format yet.
-- For dictd, recommend get from package manager liked `yay -S wordnet-dictd`.
-
-See preview screenshot [here](asset/). I uploaded an original style dictionary with html lists and a formatted dictionary with blank lines.
+1. Download files from [Releases](https://github.com/scillidan/share_wordnet/releases).
+2. Use them in GoldenDict (StarDict), sdcv, dictd, Yomichan/Yomitan.
+3. See preview screenshot [here](asset/).

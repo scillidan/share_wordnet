@@ -80,13 +80,19 @@ jobs:
       env:
         version: ${{ steps.check_version.outputs.latest_version }}
       run: |
-        pyglossary ./wn${version}-dict ./wordnet-${version}-stardict-ListStyle --read-format=Wordnet --write-format=Stardict --name=WordNet
-        pyglossary ./wn${version}-dict ./wordnet-${version}-tabfile.txt --read-format=Wordnet --write-format=Tabfile
-        python text_format.py wordnet-${version}-tabfile.txt wordnet-${version}-tabfile-formatted.txt
-        pyglossary ./wordnet-${version}-tabfile-formatted.txt ./wordnet-${version}-stardict-BlankLineStyle --read-format=Tabfile --write-format=Stardict --name=WordNet
-        pyglossary ./wordnet-${version}-tabfile-formatted.txt ./wordnet-${version}-yomichan-BlankLineStyle.zip --read-format=Tabfile --write-format=Yomichan --name=WordNet
-        python html2ansi.py wordnet-${version}-tabfile-formatted.txt wordnet-${version}-tabfile-formatted-html2ansi.txt
-        pyglossary ./wordnet-${version}-tabfile-formatted-html2ansi.txt ./wordnet-${version}-stardict-BlankLineStyle-html2ansi --read-format=Tabfile --write-format=Stardict --name=WordNet
+        # stardict
+        pyglossary ./wn${version}-dict ./wordnet-${version}-stardict --read-format=Wordnet --write-format=Stardict --name=WordNet
+        # stardict-formatted
+        pyglossary ./wn${version}-dict ./wordnet-${version}.txt --read-format=Wordnet --write-format=Tabfile
+        python text_format.py wordnet-${version}.txt wordnet-${version}-formatted.txt
+        pyglossary ./wordnet-${version}-formatted.txt ./wordnet-${version}-stardict-formatted --read-format=Tabfile --write-format=Stardict --name=WordNet
+        # sdcv
+        python html2ansi.py wordnet-${version}-formatted.txt wordnet-${version}-formatted-html2ansi.txt
+        pyglossary ./wordnet-${version}-formatted-html2ansi.txt ./wordnet-${version}-stardict-formatted-html2ansi --read-format=Tabfile --write-format=Stardict --name=WordNet
+        # dictd
+        pyglossary ./wordnet-${version}-formatted-html2ansi.txt ./wordnet-dictd --read-format=Tabfile --write-format=DictOrg --name=WordNet --write-options="dictzip=true"
+        # yomichan
+        pyglossary ./wordnet-${version}-dict ./wordnet-${version}-yomichan --read-format=Wordnet --write-format=Yomichan --name=WordNet
 
     - name: Create zip files for Stardict sets
       run: |
@@ -113,6 +119,25 @@ jobs:
           zip -j "${prefix}.zip" "$prefix.ifo" "$dict_file" "$prefix.idx"
         done
 
+- name: Create zip files for Dictd sets
+      run: |
+        for base in *.ifo; do
+          prefix="${base%.ifo}"
+          if [[ ! -f "$prefix.index" ]]; then
+            echo "Skipping $prefix, missing $prefix.index"
+            continue
+          fi
+          dict_file=""
+          if [[ -f "$prefix.dict.dz" ]]; then
+            dict_file="$prefix.dict.dz"
+          else
+            echo "Skipping $prefix, missing $prefix.dict.dz"
+            continue
+          fi
+          echo "Creating ${prefix}.zip from $dict_file and $prefix.index"
+          zip -j "${prefix}.zip" "$dict_file" "$prefix.index"
+        done
+
     - name: Create a txt file with current commit SHA
       run: echo "${{ github.sha }}" > Release.txt
 
@@ -120,7 +145,7 @@ jobs:
       run: |
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
-    
+
     - name: Create and push tag for release
       env:
         RELEASE_VERSION: ${{ steps.check_version.outputs.latest_version }}

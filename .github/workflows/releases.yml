@@ -95,7 +95,7 @@ jobs:
         # dictd
         pyglossary ./_wordnet-${version}-formatted-html2ansi.txt ./wordnet-${version}-dictd --read-format=Tabfile --write-format=DictOrg --write-options="dictzip=true" --name=WordNet
         # yomichan
-        pyglossary ./_wordnet-${version}-formatted-html2ansi.txt ./wordnet-${version}-yomichan --read-format=Tabfile --write-format=Yomichan --name=WordNet
+        pyglossary ./_wordnet-${version}-formatted-html2ansi.txt ./wordnet-${version}-yomichan.zip --read-format=Tabfile --write-format=Yomichan --name=WordNet
 
     - name: Create zip files for Stardict sets
       run: |

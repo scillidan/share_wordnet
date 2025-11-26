@@ -82,17 +82,20 @@ jobs:
       run: |
         # stardict
         pyglossary ./wn${version}-dict ./wordnet-${version}-stardict --read-format=Wordnet --write-format=Stardict --name=WordNet
-        # stardict-formatted
+        # tabfile
         pyglossary ./wn${version}-dict ./wordnet-${version}.txt --read-format=Wordnet --write-format=Tabfile
+        # tabfile-formatted
         python text_format.py wordnet-${version}.txt wordnet-${version}-formatted.txt
+        # stardict-formatted
         pyglossary ./wordnet-${version}-formatted.txt ./wordnet-${version}-stardict-formatted --read-format=Tabfile --write-format=Stardict --name=WordNet
-        # sdcv
+        # tabfile-formatted-html2ansi
         python html2ansi.py wordnet-${version}-formatted.txt wordnet-${version}-formatted-html2ansi.txt
-        pyglossary ./wordnet-${version}-formatted-html2ansi.txt ./wordnet-${version}-stardict-formatted-html2ansi --read-format=Tabfile --write-format=Stardict --name=WordNet
+        # sdcv
+        pyglossary ./wordnet-${version}-formatted-html2ansi.txt ./wordnet-${version}-sdcv --read-format=Tabfile --write-format=Stardict --name=WordNet
         # dictd
-        pyglossary ./wordnet-${version}-formatted-html2ansi.txt ./wordnet-dictd --read-format=Tabfile --write-format=DictOrg --name=WordNet --write-options="dictzip=true"
+        pyglossary ./wordnet-${version}-formatted-html2ansi.txt ./wordnet-dictd --read-format=Tabfile --write-format=DictOrg --write-options="dictzip=true" --name=WordNet
         # yomichan
-        pyglossary ./wordnet-${version}-dict ./wordnet-${version}-yomichan --read-format=Wordnet --write-format=Yomichan --name=WordNet
+        pyglossary ./wordnet-${version}-formatted-html2ansi.txt ./wordnet-${version}-yomichan --read-format=Tabfile --write-format=Yomichan --name=WordNet
 
     - name: Create zip files for Stardict sets
       run: |

@@ -80,14 +80,14 @@ jobs:
       env:
         version: ${{ steps.check_version.outputs.latest_version }}
       run: |
-        # stardict
-        pyglossary ./wn${version}-dict ./wordnet-${version}-stardict --read-format=Wordnet --write-format=Stardict --name=WordNet
+        # stardict-original
+        pyglossary ./wn${version}-dict ./wordnet-${version}-stardict-original --read-format=Wordnet --write-format=Stardict --name=WordNet
         # tabfile
         pyglossary ./wn${version}-dict ./_wordnet-${version}.txt --read-format=Wordnet --write-format=Tabfile
         # tabfile-formatted
         python text_format.py _wordnet-${version}.txt _wordnet-${version}-formatted.txt
-        # stardict-formatted
-        pyglossary ./_wordnet-${version}-formatted.txt ./wordnet-${version}-stardict-formatted --read-format=Tabfile --write-format=Stardict --name=WordNet
+        # stardict
+        pyglossary ./_wordnet-${version}-formatted.txt ./wordnet-${version}-stardict --read-format=Tabfile --write-format=Stardict --name=WordNet
         # tabfile-formatted-html2ansi
         python html2ansi.py _wordnet-${version}-formatted.txt _wordnet-${version}-formatted-html2ansi.txt
         # sdcv

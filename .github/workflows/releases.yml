@@ -123,6 +123,7 @@ jobs:
         done
 
     - name: Create zip files for Dictd sets
+      version: ${{ steps.check_version.outputs.latest_version }}
       run: |
         zip -j "wordnet-${version}-dictd.zip" "wordnet-${version}-dictd.dict.dz" "wordnet-${version}-dictd.index"
 

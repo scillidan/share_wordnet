@@ -10,11 +10,18 @@ Data from `Database Packages` on [WordNet](https://wordnet.princeton.edu/downloa
 2. Use them in GoldenDict (StarDict format), sdcv, dictd, Yomichan/Yomitan.
 3. See preview screenshot [here](asset/).
 
+### sdcv
+
+```sh
+sdcv --color --use-dict WordNet -n <word>
+```
+
 ### dictd
 
 ```sh
 # Arch
-sudo cp wordnet-*-dictd.* /usr/share/dictd/
+unzip wordnet-<version>-dictd.zip
+sudo cp wordnet-<version>-dictd.{index,dict.dz} /usr/share/dictd/
 sudo vim /etc/dict/dictd.conf
 ```
 

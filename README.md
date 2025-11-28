@@ -9,3 +9,27 @@ Data from `Database Packages` on [WordNet](https://wordnet.princeton.edu/downloa
 1. Download files from [Releases](https://github.com/scillidan/share_wordnet/releases).
 2. Use them in GoldenDict (StarDict format), sdcv, dictd, Yomichan/Yomitan.
 3. See preview screenshot [here](asset/).
+
+### dictd
+
+```sh
+# Arch
+sudo cp wordnet-*-dictd.* /usr/share/dictd/
+sudo vim /etc/dict/dictd.conf
+```
+
+```
+# Add database
+database wordnet {
+	data /usr/share/dictd/wordnet-*-dictd.dict.dz
+	index /usr/share/dictd/wordnet-*-dictd.index
+}
+```
+
+```sh
+sudo systemctl restart dictd.service
+```
+
+```sh
+dict --host localhost --port 2528 --database wordnet -n <word>
+```

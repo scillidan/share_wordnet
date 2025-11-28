@@ -1,6 +1,4 @@
-#!/usr/bin/env python3
 # Write by GPT-4o mini🧙‍♂️, scillidan🤡
-# Purpose: Process a dictionary file to clean up HTML content and format it properly.
 # Usage: python text_format.py <input_file> <output_file>
 
 import sys

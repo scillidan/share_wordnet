@@ -1,5 +1,4 @@
 # Write by GPT-4o mini🧙‍♂️, scillidan🤡
-# Purpose: Convert WordNet Tabfile's HTML tags to ANSI escape codes. The result can continue to be converted into StarDict(.ifo) files for sdcv.
 # Usage: python html2ansi.py <input_file> <output_file>
 
 import sys

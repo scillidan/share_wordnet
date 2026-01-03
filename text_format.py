@@ -1,4 +1,4 @@
-# Usage: python file.py <input_file> <output_file>
+# Usage: python file.py <input> <output>
 
 import sys
 import re
@@ -16,8 +16,7 @@ def match_replace(text):
     text = re.sub(r'<i[^>]*>', '<i>', text, flags=re.IGNORECASE)
     # Replace <small class="co"> with <small>
     text = re.sub(r'<small[^>]*>', '<small>', text, flags=re.IGNORECASE)
-    # Replace <cite class="ex"></cite> with <u></u>
-    # Replace <cite class="ex"> with <u> and </cite> with </u>
+    # Replace <cite class="ex"></cite> with <font style="color:green"></font>
     text = re.sub(r'<cite\s+class="ex"[^>]*>', '<font style="color:green">', text, flags=re.IGNORECASE)
     text = re.sub(r'</cite>', '</font>', text, flags=re.IGNORECASE)
     # Replace \\n with <br>
@@ -40,42 +39,42 @@ def match_convert(text):
     return re.sub(r'<ol>(.*?)</ol>', repl, text, flags=re.DOTALL | re.IGNORECASE)
     return text.strip()
 
-def format_line(line):
+def format(line):
     if '\t' not in line:
         return line.strip()
     parts = line.split('\t', 1)
-    word_part = parts[0]
-    meaning_part = parts[1].strip()
+    word = parts[0]
+    meaning = parts[1].strip()
 
-    meaning_part = match_remove(meaning_part)
-    meaning_part = match_replace(meaning_part)
-    meaning_part = match_convert(meaning_part)
-    meaning_part = unescape(meaning_part)
-    meaning_part = meaning_part.strip()
+    meaning = match_remove(meaning)
+    meaning = match_replace(meaning)
+    meaning = match_convert(meaning)
+    meaning = unescape(meaning)
+    meaning = meaning.strip()
 
-    formatted_line = f"{word_part}\t{meaning_part}"
-    return formatted_line
+    result = f"{word}\t{meaning}"
+    return result
 
 def main():
-	if len(sys.argv) != 3:
-		print(f"Usage: python {sys.argv[0]} <input_file> <output_file>")
-		sys.exit(1)
-	input_file = sys.argv[1]
-	output_file = sys.argv[2]
+    if len(sys.argv) != 3:
+        print(f"Usage: python {sys.argv[0]} <input> <output>")
+        sys.exit(1)
+    input = sys.argv[1]
+    output = sys.argv[2]
 
-	with open(input_file, 'r', encoding='utf-8') as f:
-		lines = f.readlines()
+    with open(input, 'r', encoding='utf-8') as f:
+        lines = f.readlines()
 
-	results = []
-	for line in lines:
-		stripped = line.strip()
-		if not stripped:
-			continue
-		formatted_line = format_line(stripped)
-		results.append(formatted_line)
+    results = []
+    for line in lines:
+        stripped = line.strip()
+        if not stripped:
+            continue
+        result = format(stripped)
+        results.append(result)
 
-	with open(output_file, 'w', encoding='utf-8') as file_out:
-		file_out.write('\n'.join(results))
+    with open(output, 'w', encoding='utf-8') as f:
+        f.write('\n'.join(results))
 
 if __name__ == '__main__':
-	main()
+    main()

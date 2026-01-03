@@ -1,0 +1,224 @@
+name: Create Releases
+
+on:
+  schedule:
+    # 00:00 on the 1st of every month (UTC)
+    - cron: '0 0 1 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install system dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y zip
+
+    - name: (WordNet) Fetch latest release date
+      id: get_latest_release
+      run: |
+        base_url="https://wordnetcode.princeton.edu/wn"
+        # Regex to match version format (e.g., 3.1)
+        version_pattern="^[0-9]+\.[0-9]+$"
+        known_versions=("3.1")
+        last_version_file="last_version.txt"
+
+        # Read last known version
+        if [[ -f $last_version_file ]]; then
+          last_version=$(cat $last_version_file)
+          echo "Last known version: $last_version"
+        else
+          last_version=""
+          echo "No last version file found"
+        fi
+
+        # Check for latest available version
+        latest_version=""
+        for version in "${known_versions[@]}"; do
+          download_url="${base_url}${version}.dict.tar.gz"
+          echo "Checking: $download_url"
+          if curl --head --silent --fail "$download_url" > /dev/null; then
+            echo "Found valid version: $version"
+            latest_version="$version"
+            echo "latest_version=$latest_version" >> $GITHUB_OUTPUT
+            break
+          else
+            echo "Version $version not found or not accessible"
+          fi
+        done
+
+        if [[ -z "$latest_version" ]]; then
+          echo "ERROR: No valid version found"
+          exit 1
+        fi
+
+        # Update version file
+        echo "$latest_version" > "$last_version_file"
+
+        echo "Latest version: $latest_version"
+        echo "Last version: $last_version"
+
+    - name: (WordNet) Check last release version from GitHub releases
+      id: check_last_release
+      run: |
+        # Try to get the latest release from GitHub
+        response=$(curl -s \
+          -H "Accept: application/vnd.github.v3+json" \
+          https://api.github.com/repos/${{ github.repository }}/releases/latest \
+          2>/dev/null || echo "")
+
+        if [[ -n "$response" ]] && [[ "$response" != *"Not Found"* ]]; then
+          LATEST_TAG=$(echo "$response" | grep '"tag_name"' | cut -d'"' -f4 || echo "")
+        else
+          LATEST_TAG=""
+        fi
+
+        if [[ -z "$LATEST_TAG" ]]; then
+          echo "No previous releases found or repository not accessible"
+          LATEST_TAG="v0.0.0"
+        fi
+
+        echo "last_release=$LATEST_TAG" >> $GITHUB_OUTPUT
+        echo "Last release from GitHub: $LATEST_TAG"
+
+    - name: (WordNet) Check if new release is available
+      id: check_new_release
+      run: |
+        LAST_RELEASE="${{ steps.check_last_release.outputs.last_release }}"
+        LATEST_VERSION="${{ steps.get_latest_release.outputs.latest_version }}"
+
+        echo "Comparing: GitHub tag '$LAST_RELEASE' vs Latest version '$LATEST_VERSION'"
+
+        # Remove 'v' prefix from tag for comparison
+        CLEAN_TAG="${LAST_RELEASE#v}"
+
+        if [[ "$CLEAN_TAG" == "$LATEST_VERSION" ]]; then
+          echo "No new version available"
+          echo "should_continue=false" >> $GITHUB_OUTPUT
+        else
+          echo "New version found: $LATEST_VERSION (previous: $CLEAN_TAG)"
+          echo "should_continue=true" >> $GITHUB_OUTPUT
+        fi
+
+    - name: (WordNet) Exit if no new release
+      if: steps.check_new_release.outputs.should_continue == 'false'
+      run: |
+        echo "No new release available. Cancelling workflow."
+        exit 0
+
+    - name: (WordNet) Download latest version
+      if: steps.check_new_release.outputs.should_continue == 'true'
+      env:
+        version: ${{ steps.get_latest_release.outputs.latest_version }}
+      run: |
+        wget "https://wordnetcode.princeton.edu/wn${version}.dict.tar.gz"
+
+    - name: (WordNet) Decompress archive
+      if: steps.check_new_release.outputs.should_continue == 'true'
+      env:
+        version: ${{ steps.get_latest_release.outputs.latest_version }}
+      run: |
+        mkdir wn${version}-dict
+        tar -xzf "wn${version}.dict.tar.gz" -C wn${version}-dict --strip-components=1
+
+    - name: Set up Python
+      if: steps.check_new_release.outputs.should_continue == 'true'
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.11"
+
+    - name: Install pyglossary
+      if: steps.check_new_release.outputs.should_continue == 'true'
+      run: pip install pyglossary lxml beautifulsoup4 python-idzip tqdm
+
+    - name: Convert with pyglossary and python scripts
+      if: steps.check_new_release.outputs.should_continue == 'true'
+      env:
+        version: ${{ steps.get_latest_release.outputs.latest_version }}
+      run: |
+        # stardict-original
+        pyglossary ./wn${version}-dict ./wordnet-${version}-stardict-original --read-format=Wordnet --write-format=Stardict --name=WordNet
+
+        # tabfile
+        pyglossary ./wn${version}-dict ./_wordnet-${version}.txt --read-format=Wordnet --write-format=Tabfile
+
+        # tabfile-formatted
+        python text_format.py _wordnet-${version}.txt _wordnet-${version}-formatted.txt
+
+        # stardict
+        pyglossary ./_wordnet-${version}-formatted.txt ./wordnet-${version}-stardict --read-format=Tabfile --write-format=Stardict --name=WordNet
+
+        # tabfile-formatted-html2ansi
+        python html2ansi.py _wordnet-${version}-formatted.txt _wordnet-${version}-formatted-html2ansi.txt
+
+        # sdcv
+        pyglossary ./_wordnet-${version}-formatted-html2ansi.txt ./wordnet-${version}-sdcv --read-format=Tabfile --write-format=Stardict --name=WordNet
+
+        # dictd
+        pyglossary ./_wordnet-${version}-formatted-html2ansi.txt ./wordnet-${version}-dictd --read-format=Tabfile --write-format=DictOrg --write-options="dictzip=true" --name=WordNet
+
+        # yomichan
+        pyglossary ./_wordnet-${version}-formatted.txt ./wordnet-${version}-yomichan.zip --read-format=Tabfile --write-format=Yomichan --name=WordNet
+
+    - name: Create ZIP files of Stardict
+      if: steps.check_new_release.outputs.should_continue == 'true'
+      run: |
+        for base in *.ifo; do
+          prefix="${base%.ifo}"
+          if [[ ! -f "$prefix.ifo" ]]; then
+            echo "Skipping $prefix, missing $prefix.ifo"
+            continue
+          fi
+          if [[ ! -f "$prefix.idx" ]]; then
+            echo "Skipping $prefix, missing $prefix.idx"
+            continue
+          fi
+          dict_file=""
+          if [[ -f "$prefix.dict.dz" ]]; then
+            dict_file="$prefix.dict.dz"
+          elif [[ -f "$prefix.dict" ]]; then
+            dict_file="$prefix.dict"
+          else
+            echo "Skipping $prefix, missing $prefix.dict.dz or $prefix.dict"
+            continue
+          fi
+          echo "Creating ${prefix}.zip from $prefix.ifo, $dict_file, $prefix.idx"
+          zip -j "${prefix}.zip" "$prefix.ifo" "$dict_file" "$prefix.idx"
+        done
+
+    - name: Create ZIP files of dictd
+      if: steps.check_new_release.outputs.should_continue == 'true'
+      env:
+        version: ${{ steps.get_latest_release.outputs.latest_version }}
+      run: |
+        zip -j "wordnet-${version}-dictd.zip" \
+          "wordnet-${version}-dictd.dict.dz" \
+          "wordnet-${version}-dictd.index"
+    - name: Generate SHA256 checksums
+      if: steps.check_new_release.outputs.should_continue == 'true'
+      run: |
+        for file in ./_*.txt ./wordnet-*.zip;
+        do
+          if [ -f "$file" ]; then
+            sha256sum "$file" > "$file.sha256";
+            echo "Generated checksum for $file";
+          fi
+        done
+
+    - name: Create GitHub Release and upload files
+      if: steps.check_new_release.outputs.should_continue == 'true'
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ steps.get_latest_release.outputs.latest_version }}
+        name: "${{ steps.get_latest_release.outputs.latest_version }}"
+        files: |
+          _*.txt
+          wordnet-*.zip

@@ -28,7 +28,7 @@ def match_replace(text):
     # Replace repeated <br> with <br>
     text = re.sub(r'(<br>\s*)+', '<br>', text)
     # Replace repeated ' ' with ' '
-    text = re.sub(r'\s+', ' ', text)
+    return re.sub(r' {2,}', ' ', text)
     return text
 
 def match_convert(text):

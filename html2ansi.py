@@ -1,9 +1,9 @@
-# Usage: python file.py <input> <output>
+# Usage: python file.py <input_file> <output_file>
 
 import sys
 import re
 
-def convert(text):
+def convert(input_file, output_file):
     replacements = {
         "<br>": r"\n",
         '<font style="color:green">': "\033[32m",
@@ -30,13 +30,13 @@ def convert(text):
 
 def main():
     if len(sys.argv) != 3:
-        print(f"Usage: python {sys.argv[0]} <input> <output>")
+        print(f"Usage: python {sys.argv[0]} <input_file> <output_file>")
         sys.exit(1)
-    input = sys.argv[1]
-    output = sys.argv[2]
+    input_file = sys.argv[1]
+    output_file = sys.argv[2]
 
-    convert(input, output)
-    print(f"Conversion completed: {input} to {output}")
+    convert(input_file, output_file)
+    print(f"Conversion completed: {input_file} to {output_file}")
 
 if __name__ == '__main__':
     main()

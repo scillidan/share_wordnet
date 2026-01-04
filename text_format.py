@@ -1,4 +1,4 @@
-# Usage: python file.py <input> <output>
+# Usage: python file.py <input_file> <output_file>
 
 import sys
 import re
@@ -27,6 +27,8 @@ def match_replace(text):
     text = re.sub(r'<br\s*/?>', '<br>', text, flags=re.IGNORECASE)
     # Replace repeated <br> with <br>
     text = re.sub(r'(<br>\s*)+', '<br>', text)
+    # Replace repeated ' ' with ' '
+    text = re.sub(r'\s+', ' ', text)
     return text
 
 def match_convert(text):
@@ -37,7 +39,6 @@ def match_convert(text):
         cleaned_li_tag = [f"{i + 1}. {item.strip()}" for i, item in enumerate(li_tag)]
         return '<br><br>'.join(cleaned_li_tag)
     return re.sub(r'<ol>(.*?)</ol>', repl, text, flags=re.DOTALL | re.IGNORECASE)
-    return text.strip()
 
 def format(line):
     if '\t' not in line:
@@ -57,23 +58,15 @@ def format(line):
 
 def main():
     if len(sys.argv) != 3:
-        print(f"Usage: python {sys.argv[0]} <input> <output>")
+        print(f"Usage: python {sys.argv[0]} <input_file> <output_file>")
         sys.exit(1)
-    input = sys.argv[1]
-    output = sys.argv[2]
+    input_file = sys.argv[1]
+    output_file = sys.argv[2]
 
-    with open(input, 'r', encoding='utf-8') as f:
+    with open(input_file, 'r', encoding='utf-8') as f:
         lines = f.readlines()
 
-    results = []
-    for line in lines:
-        stripped = line.strip()
-        if not stripped:
-            continue
-        result = format(stripped)
-        results.append(result)
-
-    with open(output, 'w', encoding='utf-8') as f:
+    with open(output_file, 'w', encoding='utf-8') as f:
         f.write('\n'.join(results))
 
 if __name__ == '__main__':

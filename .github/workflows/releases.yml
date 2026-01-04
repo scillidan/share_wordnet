@@ -202,6 +202,7 @@ jobs:
         zip -j "wordnet-${version}-dictd.zip" \
           "wordnet-${version}-dictd.dict.dz" \
           "wordnet-${version}-dictd.index"
+
     - name: Generate SHA256 checksums
       if: steps.check_new_release.outputs.should_continue == 'true'
       run: |

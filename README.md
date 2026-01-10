@@ -7,7 +7,7 @@ Data from `Database Packages` on [WordNet](https://wordnet.princeton.edu/downloa
 ## Usage
 
 1. Download files from [Releases](https://github.com/scillidan/share_wordnet/releases).
-2. Use them in GoldenDict (StarDict format), sdcv, dictd, Yomichan/Yomitan.
+2. Use them in GoldenDict (StarDict format), sdcv, dictd.
 3. See preview screenshot [here](asset/).
 
 ### sdcv

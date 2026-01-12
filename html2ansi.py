@@ -14,19 +14,32 @@ def convert(input_file, output_file):
         "</small>": "\033[0m",
     }
 
-    for html, ansi in replacements.items():
-        text = text.replace(html, ansi)
-
-    # Replace an HTML link tag with ANSI-escaped underlined blue text
     def convert_link(match):
         a_tag = match.group(1)
         text_inner = match.group(2)
         return f"\033[4;34m{text_inner}\033[0m"
 
-    # Replace all HTML anchor tags with ANSI-escaped text
-    text = re.sub(r'<a\s+href="([^"]*)">([^<]*)</a>', convert_link, text)
+    with open(input_file, 'r', encoding='utf-8') as f_in, \
+         open(output_file, 'w', encoding='utf-8') as f_out:
+        
+        for line in f_in:
+            if '\t' not in line:
+                # Skip lines that aren't properly formatted (not tab-separated)
+                continue
+                
+            parts = line.strip().split('\t', 1)
+            if len(parts) < 2:
+                continue
+                
+            word = parts[0]
+            meaning = parts[1]
 
-    return text
+            for html, ansi in replacements.items():
+                meaning = meaning.replace(html, ansi)
+
+            meaning = re.sub(r'<a\s+href="([^"]*)">([^<]*)</a>', convert_link, meaning)
+
+            f_out.write(f"{word}\t{meaning}\n")
 
 def main():
     if len(sys.argv) != 3:

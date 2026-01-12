@@ -29,7 +29,6 @@ def match_replace(text):
     text = re.sub(r'(<br>\s*)+', '<br>', text)
     # Replace repeated ' ' with ' '
     return re.sub(r' {2,}', ' ', text)
-    return text
 
 def match_convert(text):
     # Convert <ol></ol> to numbering list
@@ -65,6 +64,13 @@ def main():
 
     with open(input_file, 'r', encoding='utf-8') as f:
         lines = f.readlines()
+
+    # Process each line and collect results
+    results = []
+    for line in lines:
+        formatted_line = format(line)
+        if formatted_line:  # Only add non-empty lines
+            results.append(formatted_line)
 
     with open(output_file, 'w', encoding='utf-8') as f:
         f.write('\n'.join(results))

@@ -135,9 +135,9 @@ jobs:
       with:
         python-version: "3.11"
 
-    - name: Install pyglossary
+    - name: Install pyglossary and dependencies
       if: steps.check_new_release.outputs.should_continue == 'true'
-      run: pip install pyglossary lxml beautifulsoup4 python-idzip tqdm
+      run: pip install pyglossary lxml beautifulsoup4 python-idzip tqdm pyicu
 
     - name: Convert with pyglossary and python scripts
       if: steps.check_new_release.outputs.should_continue == 'true'
@@ -167,6 +167,9 @@ jobs:
 
         # yomichan
         pyglossary ./_wordnet-${version}-formatted.txt ./wordnet-${version}-yomichan.zip --read-format=Tabfile --write-format=Yomichan --name=WordNet
+
+        # aard2
+        pyglossary ./_wordnet-${version}-formatted.txt ./wordnet-${version}-aard2.slob --read-format=Tabfile --write-format=Aard2Slob --name=WordNet
 
     - name: Create ZIP files of Stardict
       if: steps.check_new_release.outputs.should_continue == 'true'
@@ -206,7 +209,7 @@ jobs:
     - name: Generate SHA256 checksums
       if: steps.check_new_release.outputs.should_continue == 'true'
       run: |
-        for file in ./_*.txt ./wordnet-*.zip;
+        for file in _*.txt *.zip *.slob;
         do
           if [ -f "$file" ]; then
             sha256sum "$file" > "$file.sha256";
@@ -222,4 +225,5 @@ jobs:
         name: "${{ steps.get_latest_release.outputs.latest_version }}"
         files: |
           _*.txt
-          wordnet-*.zip
+          *.zip
+          *.slob

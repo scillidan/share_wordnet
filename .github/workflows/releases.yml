@@ -171,33 +171,15 @@ jobs:
         # aard2
         pyglossary ./_wordnet-${version}-formatted.txt ./wordnet-${version}-aard2.slob --read-format=Tabfile --write-format=Aard2Slob --name=WordNet
 
-    - name: Create ZIP files of Stardict
+    - name: ZIP Stardict
       if: steps.check_new_release.outputs.should_continue == 'true'
       run: |
         for base in *.ifo; do
           prefix="${base%.ifo}"
-          if [[ ! -f "$prefix.ifo" ]]; then
-            echo "Skipping $prefix, missing $prefix.ifo"
-            continue
-          fi
-          if [[ ! -f "$prefix.idx" ]]; then
-            echo "Skipping $prefix, missing $prefix.idx"
-            continue
-          fi
-          dict_file=""
-          if [[ -f "$prefix.dict.dz" ]]; then
-            dict_file="$prefix.dict.dz"
-          elif [[ -f "$prefix.dict" ]]; then
-            dict_file="$prefix.dict"
-          else
-            echo "Skipping $prefix, missing $prefix.dict.dz or $prefix.dict"
-            continue
-          fi
-          echo "Creating ${prefix}.zip from $prefix.ifo, $dict_file, $prefix.idx"
-          zip -j "${prefix}.zip" "$prefix.ifo" "$dict_file" "$prefix.idx"
+          zip -j "${prefix}.zip" "$prefix.ifo" "$prefix.dict" "$prefix.idx" 2>/dev/null || true
         done
 
-    - name: Create ZIP files of dictd
+    - name: ZIP dictd
       if: steps.check_new_release.outputs.should_continue == 'true'
       env:
         version: ${{ steps.get_latest_release.outputs.latest_version }}
@@ -209,12 +191,8 @@ jobs:
     - name: Generate SHA256 checksums
       if: steps.check_new_release.outputs.should_continue == 'true'
       run: |
-        for file in _*.txt *.zip *.slob;
-        do
-          if [ -f "$file" ]; then
-            sha256sum "$file" > "$file.sha256";
-            echo "Generated checksum for $file";
-          fi
+        for file in _*.txt *.zip *.slob; do
+          sha256sum "$file" > "$file.sha256"
         done
 
     - name: Create GitHub Release and upload files

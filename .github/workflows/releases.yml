@@ -144,56 +144,57 @@ jobs:
       env:
         version: ${{ steps.get_latest_release.outputs.latest_version }}
       run: |
+        filename: wordnet-${version}
+        dictname: WordNet
+
         # stardict-original
-        pyglossary ./wn${version}-dict ./wordnet-${version}-stardict-original --read-format=Wordnet --write-format=Stardict --name=WordNet
+        pyglossary ./wn${version}-dict ./${filename}-stardict-original --read-format=Wordnet --write-format=Stardict --name=${dictname}
 
         # tabfile
-        pyglossary ./wn${version}-dict ./_wordnet-${version}.txt --read-format=Wordnet --write-format=Tabfile
+        pyglossary ./wn${version}-dict ./_${filename}.txt --read-format=Wordnet --write-format=Tabfile
 
         # tabfile-formatted
-        python text_format.py _wordnet-${version}.txt _wordnet-${version}-formatted.txt
+        python text_format.py _${filename}.txt _${filename}-formatted.txt
 
         # stardict
-        pyglossary ./_wordnet-${version}-formatted.txt ./wordnet-${version}-stardict --read-format=Tabfile --write-format=Stardict --name=WordNet
+        pyglossary ./_${filename}-formatted.txt ./${filename}-stardict --read-format=Tabfile --write-format=Stardict --name=${dictname}
 
         # tabfile-formatted-html2ansi
-        python html2ansi.py _wordnet-${version}-formatted.txt _wordnet-${version}-formatted-html2ansi.txt
+        python html2ansi.py _${filename}-formatted.txt _${filename}-formatted-html2ansi.txt
 
         # sdcv
-        pyglossary ./_wordnet-${version}-formatted-html2ansi.txt ./wordnet-${version}-sdcv --read-format=Tabfile --write-format=Stardict --name=WordNet
+        pyglossary ./_${filename}-formatted-html2ansi.txt ./${filename}-sdcv --read-format=Tabfile --write-format=Stardict --name=${dictname}
 
         # dictd
-        pyglossary ./_wordnet-${version}-formatted-html2ansi.txt ./wordnet-${version}-dictd --read-format=Tabfile --write-format=DictOrg --write-options="dictzip=true" --name=WordNet
+        pyglossary ./_${filename}-formatted-html2ansi.txt ./${filename}-dictd --read-format=Tabfile --write-format=DictOrg --write-options="dictzip=true" --name=${dictname}
 
         # yomichan
-        pyglossary ./_wordnet-${version}-formatted.txt ./wordnet-${version}-yomichan.zip --read-format=Tabfile --write-format=Yomichan --name=WordNet
+        pyglossary ./_${filename}-formatted.txt ./${filename}-yomichan.zip --read-format=Tabfile --write-format=Yomichan --name=${dictname}
 
         # aard2
-        pyglossary ./_wordnet-${version}-formatted.txt ./wordnet-${version}-aard2.slob --read-format=Tabfile --write-format=Aard2Slob --name=WordNet
+        pyglossary ./_${filename}-formatted.txt ./${filename}-aard2.slob --read-format=Tabfile --write-format=Aard2Slob --name=${dictname}
 
-    - name: ZIP Stardict
+    - name: ZIP stardict
       if: steps.check_new_release.outputs.should_continue == 'true'
       run: |
         for base in *.ifo; do
           prefix="${base%.ifo}"
-          zip -j "${prefix}.zip" "$prefix.ifo" "$prefix.dict" "$prefix.idx" 2>/dev/null || true
+          zip -j "${prefix}.zip" "$prefix".{ifo,dict,idx,syn} 2>/dev/null
         done
 
     - name: ZIP dictd
       if: steps.check_new_release.outputs.should_continue == 'true'
-      env:
-        version: ${{ steps.get_latest_release.outputs.latest_version }}
       run: |
-        prefix=wordnet
-        zip -j "${prefix}-${version}-dictd.zip" \
-          "${prefix}-${version}-dictd.dict.dz" \
-          "${prefix}-${version}-dictd.index"
+        for base in *.index; do
+          prefix="${base%.index}"
+          zip -j "${prefix}.zip" "$prefix".{index,dict.dz} 2>/dev/null
+        done
 
     - name: Generate SHA256 checksums
       if: steps.check_new_release.outputs.should_continue == 'true'
       run: |
-        for file in _*.txt *.zip *.slob; do
-          sha256sum "$file" > "$file.sha256"
+        for file in *.{txt,zip,slob}; do
+          sha256sum "$file" > "$file.sha256";
         done
 
     - name: Create GitHub Release and upload files
@@ -203,6 +204,4 @@ jobs:
         tag_name: ${{ steps.get_latest_release.outputs.latest_version }}
         name: "${{ steps.get_latest_release.outputs.latest_version }}"
         files: |
-          _*.txt
-          *.zip
-          *.slob
+          *.{txt,zip,slob}

@@ -6,8 +6,8 @@ import re
 def convert(input_file, output_file):
     replacements = {
         "<br>": r"\n",
-        '<font style="color:green">': "\033[32m",
-        "</font>": "\033[0m",
+        '<span style="color:green;">': "\033[32m",
+        "</span>": "\033[0m",
         '<i>': "\033[3m",
         "</i>": "\033[0m",
         '<small>': "\033[2m",
@@ -21,16 +21,16 @@ def convert(input_file, output_file):
 
     with open(input_file, 'r', encoding='utf-8') as f_in, \
          open(output_file, 'w', encoding='utf-8') as f_out:
-        
+
         for line in f_in:
             if '\t' not in line:
                 # Skip lines that aren't properly formatted (not tab-separated)
                 continue
-                
+
             parts = line.strip().split('\t', 1)
             if len(parts) < 2:
                 continue
-                
+
             word = parts[0]
             meaning = parts[1]
 

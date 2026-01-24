@@ -16,9 +16,9 @@ def match_replace(text):
     text = re.sub(r'<i[^>]*>', '<i>', text, flags=re.IGNORECASE)
     # Replace <small class="co"> with <small>
     text = re.sub(r'<small[^>]*>', '<small>', text, flags=re.IGNORECASE)
-    # Replace <cite class="ex"></cite> with <font style="color:green"></font>
-    text = re.sub(r'<cite\s+class="ex"[^>]*>', '<font style="color:green">', text, flags=re.IGNORECASE)
-    text = re.sub(r'</cite>', '</font>', text, flags=re.IGNORECASE)
+    # Replace <cite class="ex"></cite> with <span style="color:green;"></span>
+    text = re.sub(r'<cite\s+class="ex"[^>]*>', '<span style="color:green;">', text, flags=re.IGNORECASE)
+    text = re.sub(r'</cite>', '</span>', text, flags=re.IGNORECASE)
     # Replace \\n with <br>
     text = text.replace('\\n', '\n')
     lines = text.splitlines()

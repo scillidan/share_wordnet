@@ -15,7 +15,7 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v5
+      uses: actions/checkout@v6
 
     - name: Install system dependencies
       run: |
@@ -199,7 +199,7 @@ jobs:
 
     - name: Create GitHub Release and upload files
       if: steps.check_new_release.outputs.should_continue == 'true'
-      uses: softprops/action-gh-release@v2
+      uses: softprops/action-gh-release@v3
       with:
         tag_name: ${{ steps.get_latest_release.outputs.latest_version }}
         name: "${{ steps.get_latest_release.outputs.latest_version }}"

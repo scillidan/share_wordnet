@@ -131,9 +131,9 @@ jobs:
 
     - name: Set up Python
       if: steps.check_new_release.outputs.should_continue == 'true'
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v6
       with:
-        python-version: "3.11"
+        python-version: "3.12"
 
     - name: Install pyglossary and dependencies
       if: steps.check_new_release.outputs.should_continue == 'true'

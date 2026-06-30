@@ -1,8 +1,7 @@
-name: Create Releases
+name: Release
 
 on:
   schedule:
-    # 00:00 on the 1st of every month (UTC)
     - cron: '0 0 1 * *'
   workflow_dispatch:
 
@@ -15,7 +14,9 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v6
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v6
+      with:
+        persist-credentials: false
 
     - name: Install system dependencies
       run: |
@@ -26,12 +27,9 @@ jobs:
       id: get_latest_release
       run: |
         base_url="https://wordnetcode.princeton.edu/wn"
-        # Regex to match version format (e.g., 3.1)
         version_pattern="^[0-9]+\.[0-9]+$"
         known_versions=("3.1")
         last_version_file="last_version.txt"
-
-        # Read last known version
         if [[ -f $last_version_file ]]; then
           last_version=$(cat $last_version_file)
           echo "Last known version: $last_version"
@@ -39,8 +37,6 @@ jobs:
           last_version=""
           echo "No last version file found"
         fi
-
-        # Check for latest available version
         latest_version=""
         for version in "${known_versions[@]}"; do
           download_url="${base_url}${version}.dict.tar.gz"
@@ -54,52 +50,41 @@ jobs:
             echo "Version $version not found or not accessible"
           fi
         done
-
         if [[ -z "$latest_version" ]]; then
           echo "ERROR: No valid version found"
           exit 1
         fi
-
-        # Update version file
         echo "$latest_version" > "$last_version_file"
-
         echo "Latest version: $latest_version"
         echo "Last version: $last_version"
 
     - name: (WordNet) Check last release version from GitHub releases
       id: check_last_release
       run: |
-        # Try to get the latest release from GitHub
         response=$(curl -s \
           -H "Accept: application/vnd.github.v3+json" \
           https://api.github.com/repos/${{ github.repository }}/releases/latest \
           2>/dev/null || echo "")
-
         if [[ -n "$response" ]] && [[ "$response" != *"Not Found"* ]]; then
           LATEST_TAG=$(echo "$response" | grep '"tag_name"' | cut -d'"' -f4 || echo "")
         else
           LATEST_TAG=""
         fi
-
         if [[ -z "$LATEST_TAG" ]]; then
           echo "No previous releases found or repository not accessible"
           LATEST_TAG="v0.0.0"
         fi
-
         echo "last_release=$LATEST_TAG" >> $GITHUB_OUTPUT
         echo "Last release from GitHub: $LATEST_TAG"
 
     - name: (WordNet) Check if new release is available
       id: check_new_release
+      env:
+        LAST_RELEASE: ${{ steps.check_last_release.outputs.last_release }}
+        LATEST_VERSION: ${{ steps.get_latest_release.outputs.latest_version }}
       run: |
-        LAST_RELEASE="${{ steps.check_last_release.outputs.last_release }}"
-        LATEST_VERSION="${{ steps.get_latest_release.outputs.latest_version }}"
-
         echo "Comparing: GitHub tag '$LAST_RELEASE' vs Latest version '$LATEST_VERSION'"
-
-        # Remove 'v' prefix from tag for comparison
         CLEAN_TAG="${LAST_RELEASE#v}"
-
         if [[ "$CLEAN_TAG" == "$LATEST_VERSION" ]]; then
           echo "No new version available"
           echo "should_continue=false" >> $GITHUB_OUTPUT
@@ -117,21 +102,21 @@ jobs:
     - name: (WordNet) Download latest version
       if: steps.check_new_release.outputs.should_continue == 'true'
       env:
-        version: ${{ steps.get_latest_release.outputs.latest_version }}
+        VERSION: ${{ steps.get_latest_release.outputs.latest_version }}
       run: |
-        wget "https://wordnetcode.princeton.edu/wn${version}.dict.tar.gz"
+        wget "https://wordnetcode.princeton.edu/wn${VERSION}.dict.tar.gz"
 
     - name: (WordNet) Decompress archive
       if: steps.check_new_release.outputs.should_continue == 'true'
       env:
-        version: ${{ steps.get_latest_release.outputs.latest_version }}
+        VERSION: ${{ steps.get_latest_release.outputs.latest_version }}
       run: |
-        mkdir wn${version}-dict
-        tar -xzf "wn${version}.dict.tar.gz" -C wn${version}-dict --strip-components=1
+        mkdir wn${VERSION}-dict
+        tar -xzf "wn${VERSION}.dict.tar.gz" -C wn${VERSION}-dict --strip-components=1
 
     - name: Set up Python
       if: steps.check_new_release.outputs.should_continue == 'true'
-      uses: actions/setup-python@v6
+      uses: actions/setup-python@8d9ed9ac5b5349cb32a66bb81d1a1499cddbe391  # v5
       with:
         python-version: "3.12"
 
@@ -142,36 +127,18 @@ jobs:
     - name: Convert with pyglossary and python scripts
       if: steps.check_new_release.outputs.should_continue == 'true'
       env:
-        version: ${{ steps.get_latest_release.outputs.latest_version }}
+        VERSION: ${{ steps.get_latest_release.outputs.latest_version }}
       run: |
-        filename: wordnet-${version}
-        dictname: WordNet
-
-        # stardict-original
-        pyglossary ./wn${version}-dict ./${filename}-stardict-original --read-format=Wordnet --write-format=Stardict --name=${dictname}
-
-        # tabfile
-        pyglossary ./wn${version}-dict ./_${filename}.txt --read-format=Wordnet --write-format=Tabfile
-
-        # tabfile-formatted
+        filename=wordnet-${VERSION}
+        dictname=WordNet
+        pyglossary ./wn${VERSION}-dict ./${filename}-stardict-original --read-format=Wordnet --write-format=Stardict --name=${dictname}
+        pyglossary ./wn${VERSION}-dict ./_${filename}.txt --read-format=Wordnet --write-format=Tabfile
         python text_format.py _${filename}.txt _${filename}-formatted.txt
-
-        # stardict
         pyglossary ./_${filename}-formatted.txt ./${filename}-stardict --read-format=Tabfile --write-format=Stardict --name=${dictname}
-
-        # tabfile-formatted-html2ansi
         python html2ansi.py _${filename}-formatted.txt _${filename}-formatted-html2ansi.txt
-
-        # sdcv
         pyglossary ./_${filename}-formatted-html2ansi.txt ./${filename}-sdcv --read-format=Tabfile --write-format=Stardict --name=${dictname}
-
-        # dictd
         pyglossary ./_${filename}-formatted-html2ansi.txt ./${filename}-dictd --read-format=Tabfile --write-format=DictOrg --write-options="dictzip=true" --name=${dictname}
-
-        # yomichan
         pyglossary ./_${filename}-formatted.txt ./${filename}-yomichan.zip --read-format=Tabfile --write-format=Yomichan --name=${dictname}
-
-        # aard2
         pyglossary ./_${filename}-formatted.txt ./${filename}-aard2.slob --read-format=Tabfile --write-format=Aard2Slob --name=${dictname}
 
     - name: ZIP stardict
@@ -197,11 +164,13 @@ jobs:
           sha256sum "$file" > "$file.sha256";
         done
 
-    - name: Create GitHub Release and upload files
+    - name: Create GitHub Release
       if: steps.check_new_release.outputs.should_continue == 'true'
-      uses: softprops/action-gh-release@v3
-      with:
-        tag_name: ${{ steps.get_latest_release.outputs.latest_version }}
-        name: "${{ steps.get_latest_release.outputs.latest_version }}"
-        files: |
-          *.{txt,zip,slob}
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        VERSION: ${{ steps.get_latest_release.outputs.latest_version }}
+      run: |
+        gh release create "$VERSION" \
+          *.txt *.zip *.slob \
+          --title "$VERSION" \
+          --generate-notes
